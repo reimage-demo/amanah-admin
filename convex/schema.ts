@@ -24,7 +24,11 @@ export default defineSchema({
     submissionKey: v.string(),
     updatedAt: v.number(),
     consentVersion: v.string(),
+    publicListing: v.optional(v.boolean()),
+    publicConsentAt: v.optional(v.number()),
+    publicConsentVersion: v.optional(v.string()),
   })
+    .index("by_public_listing", ["publicListing"])
     .index("by_submission", ["submissionKey"])
     .index("by_kind", ["kind"])
     .index("by_email", ["email"]),

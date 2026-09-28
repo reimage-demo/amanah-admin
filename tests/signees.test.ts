@@ -140,3 +140,53 @@ describe("Amanah submission and private stewardship", () => {
     expect(row?.kind).toBe("hospital");
   });
 });
+
+describe("Public directory consent and privacy", () => {
+  test("publishes only a consenting physician's name, never private answers", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.signees.submit, submission());
+    const consented = submission();
+    await t.mutation(internal.signees.submit, { ...consented, answers: { ...consented.answers, public_directory: "yes" } });
+    const result = await t.query(internal.signees.publicMembers, { cursor: null });
+    expect(result).toEqual({ members: [{ name: "QA Physician" }], cursor: null });
+    const rows = await t.run(ctx => ctx.db.query("signees").collect());
+    expect(rows[1].publicConsentAt).toBeGreaterThan(0);
+    expect(rows[1].publicConsentVersion).toBe("public-name-only-2026-09-28");
+    expect(rows[0].publicListing).toBe(false);
+    await t.mutation(internal.signees.submit, { ...consented, answers: { ...consented.answers, public_directory: "yes" } });
+    expect((await t.query(internal.signees.publicMembers, { cursor: null })).members).toHaveLength(1);
+  });
+  test("legacy, malformed choices and hospital inquiries are private", async () => {
+    const t = convexTest(schema, modules);
+    const data = submission();
+    await t.run(ctx => ctx.db.insert("signees", {kind:"physician", name:"Legacy", email:"private@example.invalid", answers:data.answers, status:"new", submissionKey:crypto.randomUUID(), updatedAt:Date.now(), consentVersion:"old"}));
+    await t.mutation(internal.signees.submit, {...data, answers:{...data.answers,public_directory:"true"}});
+    await t.mutation(internal.signees.submit, {...submission(),kind:"hospital",answers:{contact_name:"Private hospital",email:"hospital@example.invalid",organization:"Hospital",role:"Lead",location:"City",interests:"Teaching",public_directory:"yes"}});
+    expect((await t.query(internal.signees.publicMembers,{cursor:null})).members).toEqual([]);
+  });
+  test("only admins can remove names, and archiving also unpublishes", async () => {
+    const t = convexTest(schema, modules);
+    const data = submission();
+    await t.mutation(internal.signees.submit, {...data,answers:{...data.answers,public_directory:"yes"}});
+    const row = await t.run(ctx => ctx.db.query("signees").first());
+    await expect(t.mutation(api.signees.hidePublicListing,{id:row!._id})).rejects.toThrow("Unauthorized");
+    const userId = await t.run(async ctx => {const id=await ctx.db.insert("users",{name:"Admin"});await ctx.db.insert("admins",{userId:id});return id;});
+    const admin=t.withIdentity({subject:`${userId}|session`});
+    await admin.mutation(api.signees.hidePublicListing,{id:row!._id});
+    expect((await t.query(internal.signees.publicMembers,{cursor:null})).members).toEqual([]);
+    const second=submission();
+    await t.mutation(internal.signees.submit,{...second,answers:{...second.answers,public_directory:"yes"}});
+    const visible = await t.run(ctx=>ctx.db.query("signees").withIndex("by_public_listing",q=>q.eq("publicListing",true)).first());
+    await admin.mutation(api.signees.updateStatus,{id:visible!._id,status:"archived"});
+    expect((await t.query(internal.signees.publicMembers,{cursor:null})).members).toEqual([]);
+  });
+  test("HTTP directory exposes names only and rejects an oversized cursor", async () => {
+    const t=convexTest(schema, modules), data=submission();
+    await t.mutation(internal.signees.submit,{...data,answers:{...data.answers,public_directory:"yes"}});
+    const response=await t.fetch('/members');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(await response.json()).toEqual({members:[{name:'QA Physician'}],cursor:null});
+    expect((await t.fetch('/members?cursor='+ 'x'.repeat(4097))).status).toBe(400);
+  });
+});

@@ -52,6 +52,12 @@ const labels = {
   interests: "Areas of interest",
   needs: "Institutional needs",
 };
+function SiteFooter() {
+  return <footer className="legal-footer">
+    <p>Powered by <a href="https://reimagebs.com">REIMAGE BUSINESS SOLUTIONS</a></p>
+    <nav aria-label="Policies">{[["privacy", "Privacy"], ["terms", "Terms"], ["legal", "Legal"], ["cookies", "Cookies"], ["accessibility", "Accessibility"]].map(([path, label]) => <a key={path} href={`${publicSiteUrl}/${path}.html`}>{label}</a>)}</nav>
+  </footer>;
+}
 const date = (value) =>
   new Date(value).toLocaleDateString(undefined, {
     month: "short",
@@ -133,6 +139,7 @@ function Login() {
           {busy ? "Signing in…" : "Sign in"}
         </button>
       </form>
+      <SiteFooter />
     </main>
   );
 }
@@ -140,7 +147,8 @@ function Login() {
 function Detail({ id, close }) {
   const data = useQuery(api.signees.detail, { id });
   const update = useMutation(api.signees.updateStatus),
-    addNote = useMutation(api.signees.addNote);
+    addNote = useMutation(api.signees.addNote),
+    hideListing = useMutation(api.signees.hidePublicListing);
   const [note, setNote] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -213,6 +221,12 @@ function Detail({ id, close }) {
                 ))}
               </select>
             </label>
+            {signee.kind === "physician" && <section className="directory-control">
+              <h3>Public member directory</h3>
+              <p>{signee.publicListing ? "Name is publicly listed with signup consent." : "Name is not publicly listed."}</p>
+              <p className="muted">{signee.publicConsentAt ? `Name-only consent recorded ${date(signee.publicConsentAt)}. ${signee.publicConsentVersion}` : "No public-listing consent was recorded. Private details remain private."}</p>
+              {signee.publicListing && <button className="secondary" disabled={busy} onClick={() => run(() => hideListing({ id }))}>Remove public name</button>}
+            </section>}
             <h3>In their own words</h3>
             <dl>
               {Object.entries(signee.answers).map(([key, value]) => (
@@ -584,6 +598,7 @@ export default function App() {
       </aside>
       <main className="workspace">
         <Workspace tab={tab} setTab={setTab} />
+        <SiteFooter />
       </main>
     </div>
   );

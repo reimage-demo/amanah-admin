@@ -1,4 +1,4 @@
-import { internalMutation, query, mutation } from "./_generated/server";
+import { internalMutation, internalQuery, query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { kind, status } from "./schema";
@@ -76,7 +76,12 @@ export const submit = internalMutation({
       status: "new",
       submissionKey: args.submissionKey,
       updatedAt: now,
-      consentVersion: "inquiry-data-use-2026-09",
+      consentVersion: "privacy-2026-09-28",
+      publicListing: args.kind === "physician" && args.answers.public_directory === "yes",
+      ...(args.kind === "physician" && args.answers.public_directory === "yes" ? {
+        publicConsentAt: now,
+        publicConsentVersion: "public-name-only-2026-09-28",
+      } : {}),
     });
     return { ok: true };
   },
@@ -110,7 +115,7 @@ export const updateStatus = mutation({
   args: { id: v.id("signees"), status },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    await ctx.db.patch(args.id, { status: args.status, updatedAt: Date.now() });
+    await ctx.db.patch(args.id, { status: args.status, updatedAt: Date.now(), ...(args.status === "archived" ? { publicListing: false } : {}) });
   },
 });
 export const addNote = mutation({
@@ -121,5 +126,27 @@ export const addNote = mutation({
     if (!body.trim() || body.length > 3000)
       throw new Error("Notes must contain 1–3000 characters.");
     await ctx.db.insert("notes", { signeeId: id, body: body.trim(), author });
+  },
+});
+
+// This projection is the only data returned by the public directory endpoint.
+export const publicMembers = internalQuery({
+  args: { cursor: v.union(v.string(), v.null()) },
+  handler: async (ctx, { cursor }) => {
+    const result = await ctx.db.query("signees")
+      .withIndex("by_public_listing", q => q.eq("publicListing", true))
+      .order("desc").paginate({ numItems: 50, cursor });
+    return {
+      members: result.page.filter(row => row.kind === "physician" && row.publicConsentAt && row.status !== "archived")
+        .map(row => ({ name: row.name })),
+      cursor: result.isDone ? null : result.continueCursor,
+    };
+  },
+});
+export const hidePublicListing = mutation({
+  args: { id: v.id("signees") },
+  handler: async (ctx, { id }) => {
+    await requireAdmin(ctx);
+    await ctx.db.patch(id, { publicListing: false, updatedAt: Date.now() });
   },
 });

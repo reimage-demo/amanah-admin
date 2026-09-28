@@ -1,4 +1,32 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap");
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(./assets/fonts/dm-sans-400.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(./assets/fonts/dm-sans-500.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(./assets/fonts/dm-sans-600.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(./assets/fonts/dm-sans-700.ttf) format('truetype');
+}
+
 :root {
   font-family: "DM Sans", sans-serif;
   color: #242852;
@@ -868,3 +896,9 @@ dd {
 .welcome-banner :focus-visible {
   outline-color: #fff;
 }
+
+.legal-footer { padding: 24px; text-align: center; font-size: 12px; color: #515777; }
+.legal-footer a { color: inherit; }
+.legal-footer nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; }
+.auth-shell { display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.directory-control { margin: 24px 0; padding: 20px; background: #f5f6ff; }

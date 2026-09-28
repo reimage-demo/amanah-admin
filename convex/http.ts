@@ -6,7 +6,7 @@ const http = httpRouter();
 auth.addHttpRoutes(http);
 const headers = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
   "Content-Type": "application/json",
   "Cache-Control": "no-store",
@@ -58,6 +58,19 @@ http.route({
         }),
         { status: 400, headers },
       );
+    }
+  }),
+});
+http.route({
+  path: "/members",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const cursor = new URL(request.url).searchParams.get("cursor");
+      if (cursor && cursor.length > 4096) throw new Error("Invalid cursor");
+      return new Response(JSON.stringify(await ctx.runQuery(internal.signees.publicMembers, { cursor })), { headers });
+    } catch {
+      return new Response(JSON.stringify({ error: "The directory is unavailable. Please try again." }), { status: 400, headers });
     }
   }),
 });
