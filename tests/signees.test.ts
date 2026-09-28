@@ -1,7 +1,9 @@
 import { convexTest } from "convex-test";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, beforeEach } from "vitest";
 import schema from "../convex/schema";
 import { api, internal } from "../convex/_generated/api";
+import { decrypt } from "../convex/lib/security";
+beforeEach(()=>{process.env.SIGNUP_DATA_KEY_V1=btoa("a".repeat(32));process.env.SIGNUP_INDEX_KEY_V1=btoa("b".repeat(32));});
 const modules = import.meta.glob("../convex/**/*.ts");
 const submission = () => ({
   kind: "physician" as const,
@@ -27,7 +29,9 @@ describe("Amanah submission and private stewardship", () => {
     await t.mutation(internal.signees.submit, data);
     const rows = await t.run((ctx) => ctx.db.query("signees").collect());
     expect(rows).toHaveLength(1);
-    expect(rows[0].answers).toEqual(data.answers);
+    expect(rows[0].answers).toBeUndefined();
+    expect(JSON.stringify(rows)).not.toContain(data.answers.email);
+    expect((await decrypt(rows[0].encrypted!,`signee:${rows[0].submissionKey}`)).answers).toEqual(data.answers);
     expect(rows[0].status).toBe("new");
   });
   test("rejects invalid and missing answers without creating records", async () => {
@@ -90,7 +94,8 @@ describe("Amanah submission and private stewardship", () => {
       await ctx.db.insert("admins", { userId: id });
       return id;
     });
-    const admin = t.withIdentity({ subject: `${userId}|session` });
+    const sessionId=await t.run(ctx=>ctx.db.insert("authSessions",{userId,expirationTime:Date.now()+3600000}));
+    const admin = t.withIdentity({ subject: `${userId}|${sessionId}` });
     const rows = await admin.query(api.signees.list, {
       kind: "physician",
       paginationOpts: page,
@@ -136,7 +141,7 @@ describe("Amanah submission and private stewardship", () => {
       answers,
     });
     const row = await t.run((ctx) => ctx.db.query("signees").first());
-    expect(row?.answers).toEqual(answers);
+    expect((await decrypt(row!.encrypted!,`signee:${row!.submissionKey}`)).answers).toEqual(answers);
     expect(row?.kind).toBe("hospital");
   });
 });
@@ -171,7 +176,8 @@ describe("Public directory consent and privacy", () => {
     const row = await t.run(ctx => ctx.db.query("signees").first());
     await expect(t.mutation(api.signees.hidePublicListing,{id:row!._id})).rejects.toThrow("Unauthorized");
     const userId = await t.run(async ctx => {const id=await ctx.db.insert("users",{name:"Admin"});await ctx.db.insert("admins",{userId:id});return id;});
-    const admin=t.withIdentity({subject:`${userId}|session`});
+    const sessionId=await t.run(ctx=>ctx.db.insert("authSessions",{userId,expirationTime:Date.now()+3600000}));
+    const admin=t.withIdentity({subject:`${userId}|${sessionId}`});
     await admin.mutation(api.signees.hidePublicListing,{id:row!._id});
     expect((await t.query(internal.signees.publicMembers,{cursor:null})).members).toEqual([]);
     const second=submission();

@@ -1,5 +1,5 @@
 import { internalAction, internalMutation } from "./_generated/server";
-import { createAccount } from "@convex-dev/auth/server";
+import { createAccount, modifyAccountCredentials } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 export const grantAdmin = internalMutation({
@@ -32,3 +32,10 @@ export const createAdmin = internalAction({
     return { created: true };
   },
 });
+
+export const secureAdmin = internalAction({args:{},handler:async(ctx)=>{
+ const id=process.env.ADMIN_USERNAME, secret=process.env.ADMIN_INITIAL_PASSWORD;
+ if(!id||!secret) throw new Error("Bootstrap credentials required");
+ await modifyAccountCredentials(ctx,{provider:"password",account:{id,secret}});
+ return {secured:true};
+}});

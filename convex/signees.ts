@@ -1,3 +1,10 @@
+import { encrypt, decrypt, privateIndex } from "./lib/security";
+import { Doc } from "./_generated/dataModel";
+export async function reveal(row: Doc<"signees">) {
+ const { encrypted, ...metadata } = row;
+ const data = encrypted ? await decrypt(encrypted, `signee:${row.submissionKey}`) : {name:row.name,email:row.email,answers:row.answers};
+ return {...metadata,...data} as Omit<Doc<"signees">,"encrypted"|"name"|"email"|"answers"> & {name:string,email:string,answers:Record<string,string>};
+}
 import { internalMutation, internalQuery, query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
@@ -53,7 +60,7 @@ export const submit = internalMutation({
       .unique();
     if (previous) return { ok: true };
     const now = Date.now();
-    for (const key of [args.rateKey, `email:${answers.email.toLowerCase()}`]) {
+    for (const key of [args.rateKey, `email:${await privateIndex(answers.email.toLowerCase())}`]) {
       const limit = await ctx.db
         .query("rateLimits")
         .withIndex("by_key", (q) => q.eq("key", key))
@@ -70,9 +77,7 @@ export const submit = internalMutation({
     }
     await ctx.db.insert("signees", {
       kind: args.kind,
-      answers,
-      name: answers.full_name || answers.contact_name,
-      email: answers.email.toLowerCase(),
+      encrypted: await encrypt({answers, name:answers.full_name || answers.contact_name, email:answers.email.toLowerCase()}, `signee:${args.submissionKey}`),
       status: "new",
       submissionKey: args.submissionKey,
       updatedAt: now,
@@ -90,25 +95,25 @@ export const list = query({
   args: { kind, paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    return ctx.db
+    const result = await ctx.db
       .query("signees")
       .withIndex("by_kind", (q) => q.eq("kind", args.kind))
       .order("desc")
       .paginate(args.paginationOpts);
+    return {...result, page:await Promise.all(result.page.map(reveal))};
   },
 });
 export const detail = query({
   args: { id: v.id("signees") },
   handler: async (ctx, { id }) => {
     await requireAdmin(ctx);
-    return {
-      signee: await ctx.db.get(id),
-      notes: await ctx.db
+    const row = await ctx.db.get(id);
+    const notes = await ctx.db
         .query("notes")
         .withIndex("by_signee", (q) => q.eq("signeeId", id))
         .order("desc")
-        .collect(),
-    };
+        .collect();
+    return {signee: row ? await reveal(row) : null, notes:await Promise.all(notes.map(async ({encrypted,...note})=>({...note,body:encrypted ? await decrypt(encrypted,`note:${id}`) : note.body})))};
   },
 });
 export const updateStatus = mutation({
@@ -125,7 +130,7 @@ export const addNote = mutation({
     if (!(await ctx.db.get(id))) throw new Error("Signee not found");
     if (!body.trim() || body.length > 3000)
       throw new Error("Notes must contain 1–3000 characters.");
-    await ctx.db.insert("notes", { signeeId: id, body: body.trim(), author });
+    await ctx.db.insert("notes", { signeeId: id, encrypted: await encrypt(body.trim(), `note:${id}`), author });
   },
 });
 
@@ -137,8 +142,8 @@ export const publicMembers = internalQuery({
       .withIndex("by_public_listing", q => q.eq("publicListing", true))
       .order("desc").paginate({ numItems: 50, cursor });
     return {
-      members: result.page.filter(row => row.kind === "physician" && row.publicConsentAt && row.status !== "archived")
-        .map(row => ({ name: row.name })),
+      members: await Promise.all(result.page.filter(row => row.kind === "physician" && row.publicConsentAt && row.status !== "archived")
+        .map(async row => ({ name: (await reveal(row)).name }))),
       cursor: result.isDone ? null : result.continueCursor,
     };
   },

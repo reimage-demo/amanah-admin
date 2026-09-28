@@ -1,3 +1,4 @@
+import { useIdleSession } from "./useIdleSession";
 import { useState, useRef, useEffect } from "react";
 import {
   useConvexAuth,
@@ -533,6 +534,7 @@ function Workspace({ tab, setTab }) {
 }
 export default function App() {
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const idle = useIdleSession(isAuthenticated);
   const { signOut } = useAuthActions();
   const [tab, setTab] = useState("overview"),
     [error, setError] = useState("");
@@ -577,6 +579,7 @@ export default function App() {
       </main>
     );
   if (!isAuthenticated) return <Login />;
+  if (!idle.ready) return <main className="recovery"><p>{idle.locked ? "Your session expired. Please sign in again." : "Checking your session…"}</p><button onClick={() => signOut().then(() => location.reload())}>Return to sign in</button></main>;
   return (
     <div className={`portal${!mobile && collapsed ? " sidebar-collapsed" : ""}${mobileOpen ? " mobile-nav-open" : ""}`}>
       <header className="mobile-admin-header" inert={mobileOpen}>

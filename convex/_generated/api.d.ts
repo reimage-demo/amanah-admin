@@ -11,6 +11,9 @@
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as lib_admin from "../lib/admin.js";
+import type * as lib_security from "../lib/security.js";
+import type * as migration from "../migration.js";
+import type * as sessions from "../sessions.js";
 import type * as setup from "../setup.js";
 import type * as signees from "../signees.js";
 
@@ -24,6 +27,9 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
   "lib/admin": typeof lib_admin;
+  "lib/security": typeof lib_security;
+  migration: typeof migration;
+  sessions: typeof sessions;
   setup: typeof setup;
   signees: typeof signees;
 }>;
