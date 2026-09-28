@@ -932,3 +932,45 @@ dd {
   .sidebar .sidebar-label { display: block; }
   .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 39; background: #080c2866; border: 0; }
 }
+
+/* Car Craft sidebar structure, using Amanah's navy and white palette. */
+.sidebar { padding: 0 12px 16px; gap: 10px; }
+.sidebar-heading, .sidebar-collapsed .sidebar-heading {
+  min-height: 122px;
+  padding: 18px 6px;
+  margin: 0 0 8px;
+  border-bottom: 1px solid #ffffff26;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sidebar .brand { width: 110px; margin: 0 auto; }
+.sidebar .brand img { height: 86px; object-fit: contain; }
+.sidebar .sidebar-toggle, .sidebar .logout {
+  width: 100%;
+  min-height: 40px;
+  height: auto;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #ffffffe6;
+  border-radius: 6px;
+  background: #fff;
+  color: #191b43;
+  font-size: 13px;
+  font-weight: 600;
+}
+.sidebar .sidebar-toggle:hover, .sidebar .logout:hover { background: #e8ecff; }
+.sidebar nav { gap: 7px; }
+.sidebar nav button { min-height: 42px; padding: 10px 12px; border: 1px solid #ffffff14; background: #ffffff0d; border-radius: 6px; }
+.sidebar nav button:hover { background: #ffffff1f; }
+.sidebar nav button.active { background: #303663; box-shadow: inset 3px 0 0 #fff; border-color: #ffffff29; }
+.sidebar .nav-dot { display: none; }
+.sidebar-collapsed .sidebar { padding: 0 10px 16px; }
+.sidebar-collapsed .sidebar-heading { min-height: 122px; }
+.sidebar-collapsed .brand { width: 56px; }
+.sidebar-collapsed .brand img { height: 86px; }
+.sidebar-collapsed .sidebar-toggle, .sidebar-collapsed .logout { justify-content: center; padding: 10px 0; }
+.sidebar .sidebar-toggle:focus-visible, .sidebar .logout:focus-visible { outline: 3px solid #9fb5ff; outline-offset: 3px; }

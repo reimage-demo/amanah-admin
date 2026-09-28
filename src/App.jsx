@@ -589,11 +589,11 @@ export default function App() {
           <a className="brand" href={`${publicSiteUrl}/`} title="Amanah public website">
             <img src={logo} alt="Amanah Medical" />
           </a>
-          <button className="sidebar-toggle" aria-label={mobile ? "Close navigation" : collapsed ? "Expand sidebar" : "Collapse sidebar"} title={mobile ? "Close navigation" : collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={mobile ? mobileOpen : !collapsed} aria-controls="admin-navigation" onClick={() => mobile ? setMobileOpen(false) : setCollapsed(value => !value)}>
-            {mobile ? <X size={20} /> : collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
-          </button>
         </div>
-        <span className="sidebar-label">STEWARDSHIP PORTAL</span>
+        <button className="sidebar-toggle" aria-label={mobile ? "Close navigation" : collapsed ? "Expand sidebar" : "Collapse sidebar"} title={mobile ? "Close navigation" : collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={mobile ? mobileOpen : !collapsed} aria-controls="admin-navigation" onClick={() => mobile ? setMobileOpen(false) : setCollapsed(value => !value)}>
+          {mobile ? <X size={20} /> : collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+          <span className="nav-label">{mobile ? "Close menu" : collapsed ? "Expand" : "Collapse"}</span>
+        </button>
         <nav id="admin-navigation" aria-label="Administration">
           {[
             [LayoutDashboard, "overview", "Overview"],
@@ -615,13 +615,6 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="mission">
-            <HeartHandshake size={23} />
-            <p>
-              One shared purpose.
-              <br />A world of possibility.
-            </p>
-          </div>
           <div className="admin-person">
             <span className="avatar">AM</span>
             <div>
