@@ -30,3 +30,10 @@ test("30 minute inactivity blocks reads and cannot be revived by activity",async
  await t.mutation(internal.sessions.expire,{sessionId});expect(await t.run(ctx=>ctx.db.get(sessionId))).toBeNull();
  await t.finishAllScheduledFunctions(()=>vi.runAllTimers());
 });
+test("migration replaces legacy plaintext without losing answers",async()=>{
+ const t=convexTest(schema,modules);
+ const id=await t.run(ctx=>ctx.db.insert("signees",{kind:"physician",name:"Legacy Test",email:"legacy@test.invalid",answers:{languages:"Arabic"},status:"new",submissionKey:"legacy-key",updatedAt:Date.now(),consentVersion:"old"}));
+ await t.mutation(internal.migration.encryptRecords,{table:"signees",cursor:null});
+ const row=await t.run(ctx=>ctx.db.get(id));expect(row?.name).toBeUndefined();expect(row?.email).toBeUndefined();expect(row?.answers).toBeUndefined();
+ expect(await decrypt(row!.encrypted!,"signee:legacy-key")).toEqual({name:"Legacy Test",email:"legacy@test.invalid",answers:{languages:"Arabic"}});
+});

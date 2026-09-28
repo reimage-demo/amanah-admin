@@ -1,6 +1,6 @@
 import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
-import { encrypt, privateIndex } from "./lib/security";
+import { encrypt, decrypt, privateIndex } from "./lib/security";
 export const encryptRecords=internalMutation({args:{table:v.union(v.literal("signees"),v.literal("notes"),v.literal("rateLimits")),cursor:v.union(v.string(),v.null())},handler:async(ctx,{table,cursor})=>{
  const result=await ctx.db.query(table).paginate({numItems:50,cursor});
  for(const row of result.page) {
@@ -10,3 +10,5 @@ export const encryptRecords=internalMutation({args:{table:v.union(v.literal("sig
  }
  return {count:result.page.length,cursor:result.isDone?null:result.continueCursor};
 }});
+
+export const verifyEncryption = internalMutation({args:{},handler:async()=>{const probe={value:"non-personal encryption check"};const ciphertext=await encrypt(probe,"probe");const result=await decrypt(ciphertext,"probe");return {encrypted:ciphertext.startsWith("v1."),roundTrip:result.value===probe.value};}});

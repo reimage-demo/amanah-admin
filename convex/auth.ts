@@ -17,6 +17,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       },
     }),
   ],
+  jwt: { durationMs: 5 * 60 * 1000 },
   session: {
     totalDurationMs: 12 * 60 * 60 * 1000,
     inactiveDurationMs: 30 * 60 * 1000,
