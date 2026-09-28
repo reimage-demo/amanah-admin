@@ -323,7 +323,7 @@ function Workspace({ tab, setTab }) {
       {overview && (
         <section className="welcome-banner">
           <div>
-            <span className="eyebrow gold">EVERY CONNECTION MATTERS</span>
+            <span className="eyebrow on-dark">EVERY CONNECTION MATTERS</span>
             <h2>
               A warmer welcome.
               <br />A stronger movement.
