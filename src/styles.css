@@ -902,3 +902,33 @@ dd {
 .legal-footer nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; }
 .auth-shell { display: flex; flex-direction: column; justify-content: center; align-items: center; }
 .directory-control { margin: 24px 0; padding: 20px; background: #f5f6ff; }
+
+/* Compact white logo, with a collapsible navigation rail. */
+.sidebar { z-index: 40; overflow-y: auto; }
+.sidebar-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 30px; }
+.sidebar .brand { width: 100px; padding: 0; margin: 0; background: transparent; border-radius: 0; }
+.sidebar .brand img, .mobile-admin-header img { filter: brightness(0) invert(1); }
+.sidebar-toggle { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex-shrink: 0; background: #ffffff0d; border: 1px solid #ffffff30; color: #fff; border-radius: 5px; }
+.sidebar-toggle:hover { background: #ffffff20; }
+.sidebar svg { flex-shrink: 0; }
+.sidebar-collapsed .sidebar { width: 84px; padding: 24px 12px; }
+.sidebar-collapsed .workspace { margin-left: 84px; width: calc(100% - 84px); }
+.sidebar-collapsed .sidebar-heading { flex-direction: column; gap: 20px; }
+.sidebar-collapsed .brand { width: 56px; }
+.sidebar-collapsed .sidebar-label, .sidebar-collapsed .mission, .sidebar-collapsed .admin-person, .sidebar-collapsed .nav-label, .sidebar-collapsed .nav-dot { display: none; }
+.sidebar-collapsed .sidebar nav button, .sidebar-collapsed .logout { justify-content: center; padding: 15px 0; width: 100%; }
+.mobile-admin-header, .sidebar-backdrop { display: none; }
+@media (max-width: 760px) {
+  .mobile-admin-header { display: flex; align-items: center; justify-content: space-between; background: #191b43; padding: 12px 18px; }
+  .mobile-admin-header img { width: 60px; height: 52px; object-fit: contain; }
+  .mobile-admin-header button { color: white; background: transparent; padding: 10px; }
+  .sidebar { position: fixed; inset: 0 auto 0 0; width: min(280px, 85vw); padding: 24px 20px; transform: translateX(-100%); visibility: hidden; }
+  .mobile-nav-open .sidebar { transform: none; visibility: visible; }
+  .sidebar .brand { width: 100px; margin: 0; padding: 0; }
+  .sidebar nav { display: grid; gap: 7px; }
+  .sidebar nav button { font-size: 13px; padding: 15px; gap: 13px; }
+  .sidebar-bottom { position: static; margin-top: auto; }
+  .sidebar .admin-person { display: flex; }
+  .sidebar .sidebar-label { display: block; }
+  .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 39; background: #080c2866; border: 0; }
+}

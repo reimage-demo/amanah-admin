@@ -21,6 +21,9 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Menu,
 } from "lucide-react";
 import { api } from "../convex/_generated/api";
 import logo from "./assets/amanah-logo-transparent.png";
@@ -533,6 +536,39 @@ export default function App() {
   const { signOut } = useAuthActions();
   const [tab, setTab] = useState("overview"),
     [error, setError] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 760px)").matches);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const sidebarRef = useRef(null);
+  const menuRef = useRef(null);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 760px)");
+    const change = () => { setMobile(query.matches); setMobileOpen(false); };
+    query.addEventListener("change", change);
+    return () => query.removeEventListener("change", change);
+  }, []);
+  useEffect(() => {
+    if (!mobile || !mobileOpen || !isAuthenticated) return;
+    const sidebar = sidebarRef.current;
+    sidebar?.querySelector("button")?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const keydown = (event) => {
+      if (event.key === "Escape") { event.preventDefault(); setMobileOpen(false); }
+      if (event.key === "Tab") {
+        const items = [...sidebar.querySelectorAll('a[href], button:not([disabled])')];
+        const first = items[0], last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener("keydown", keydown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", keydown);
+      menuRef.current?.focus();
+    };
+  }, [mobile, mobileOpen, isAuthenticated]);
   if (isLoading)
     return (
       <main className="recovery">
@@ -542,13 +578,23 @@ export default function App() {
     );
   if (!isAuthenticated) return <Login />;
   return (
-    <div className="portal">
-      <aside className="sidebar">
-        <a className="brand" href={`${publicSiteUrl}/`}>
-          <img src={logo} alt="Amanah Medical" />
-        </a>
+    <div className={`portal${!mobile && collapsed ? " sidebar-collapsed" : ""}${mobileOpen ? " mobile-nav-open" : ""}`}>
+      <header className="mobile-admin-header" inert={mobileOpen}>
+        <img src={logo} alt="Amanah Medical" />
+        <button ref={menuRef} aria-label="Open navigation" aria-expanded={mobileOpen} aria-controls="admin-sidebar" onClick={() => setMobileOpen(true)}><Menu size={22} /></button>
+      </header>
+      {mobile && mobileOpen && <button className="sidebar-backdrop" aria-label="Dismiss navigation" tabIndex={-1} onClick={() => setMobileOpen(false)} />}
+      <aside id="admin-sidebar" ref={sidebarRef} className="sidebar" inert={mobile && !mobileOpen} role={mobile && mobileOpen ? "dialog" : undefined} aria-modal={mobile && mobileOpen ? true : undefined} aria-label="Admin navigation">
+        <div className="sidebar-heading">
+          <a className="brand" href={`${publicSiteUrl}/`} title="Amanah public website">
+            <img src={logo} alt="Amanah Medical" />
+          </a>
+          <button className="sidebar-toggle" aria-label={mobile ? "Close navigation" : collapsed ? "Expand sidebar" : "Collapse sidebar"} title={mobile ? "Close navigation" : collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={mobile ? mobileOpen : !collapsed} aria-controls="admin-navigation" onClick={() => mobile ? setMobileOpen(false) : setCollapsed(value => !value)}>
+            {mobile ? <X size={20} /> : collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+          </button>
+        </div>
         <span className="sidebar-label">STEWARDSHIP PORTAL</span>
-        <nav aria-label="Administration">
+        <nav id="admin-navigation" aria-label="Administration">
           {[
             [LayoutDashboard, "overview", "Overview"],
             [Users, "signees", "Signees"],
@@ -558,10 +604,12 @@ export default function App() {
               key={key}
               className={tab === key ? "active" : ""}
               aria-current={tab === key ? "page" : undefined}
-              onClick={() => setTab(key)}
+              aria-label={label}
+              title={label}
+              onClick={() => { setTab(key); setMobileOpen(false); }}
             >
               <Icon size={19} />
-              {label}
+              <span className="nav-label">{label}</span>
               {tab === key && <span className="nav-dot" />}
             </button>
           ))}
@@ -583,6 +631,8 @@ export default function App() {
           </div>
           <button
             className="logout"
+            aria-label="Sign out"
+            title="Sign out"
             onClick={async () => {
               try {
                 await signOut();
@@ -591,12 +641,12 @@ export default function App() {
               }
             }}
           >
-            <LogOut size={17} /> Sign out
+            <LogOut size={17} /> <span className="nav-label">Sign out</span>
           </button>
           {error && <p role="alert">{error}</p>}
         </div>
       </aside>
-      <main className="workspace">
+      <main className="workspace" inert={mobile && mobileOpen}>
         <Workspace tab={tab} setTab={setTab} />
         <SiteFooter />
       </main>
