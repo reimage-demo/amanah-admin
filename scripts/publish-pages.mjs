@@ -1,4 +1,4 @@
-import { cpSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -8,14 +8,18 @@ function git(args) { return execFileSync('git', args, { cwd: destination, encodi
 try {
   execFileSync('npm', ['run', 'build'], { stdio: 'inherit' });
   const existing = execFileSync('git', ['ls-remote', repository, 'refs/heads/gh-pages'], { encoding: 'utf8' }).trim();
+  let customDomain;
   if (existing) {
     git(['clone', '--depth', '1', '--single-branch', '--branch', 'gh-pages', repository, '.']);
+    const cname = join(destination, 'CNAME');
+    if (existsSync(cname)) customDomain = readFileSync(cname, 'utf8');
     for (const file of readdirSync(destination)) if (file !== '.git') rmSync(join(destination, file), { recursive: true, force: true });
   } else {
     git(['init', '-b', 'gh-pages']);
     git(['remote', 'add', 'origin', repository]);
   }
   cpSync(resolve('dist'), destination, { recursive: true });
+  if (customDomain && !existsSync(join(destination, 'CNAME'))) writeFileSync(join(destination, 'CNAME'), customDomain);
   writeFileSync(join(destination, '.nojekyll'), '');
   git(['add', '--all']);
   if (git(['status', '--porcelain']).trim()) {

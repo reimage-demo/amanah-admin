@@ -30,7 +30,7 @@ npm run publish:pages
 
 This builds only this portal and publishes `dist/` to this repository’s `gh-pages` branch. GitHub Pages must use that branch, root directory. The public website deploys independently from `reimage-demo/amanah`.
 
-To connect `admin.amanah.com`, set **this repository’s** Settings → Pages → Custom domain to `admin.amanah.com`, then add an `admin` CNAME in your domain DNS pointing to `reimage-demo.github.io`. Add `public/CNAME` containing `admin.amanah.com` before subsequent builds so the domain configuration is retained, and enable HTTPS once the certificate is available. These domain/DNS changes have not been made. The public repository has its own independent Pages custom-domain field for `amanah.com`.
+To connect `admin.amanah.com`, set **this repository’s** Settings → Pages → Custom domain to `admin.amanah.com`, then add an `admin` CNAME in your domain DNS pointing to `reimage-demo.github.io`. The publishing script preserves the domain configured in Pages. You can also put it in `public/CNAME`. Enable HTTPS once the certificate is available. These domain/DNS changes have not been made. The public repository has its own independent Pages custom-domain field for `amanah.com`.
 
 The Vite base is relative, so the same build supports the GitHub Pages preview and the custom-domain root. No shared source folder or cross-repository build dependency is required.
 
